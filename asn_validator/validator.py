@@ -8,8 +8,11 @@ from .label_parser import parse_label
 def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) -> Dict[str, Any]:
     result = {
         'success': True,
-        'checks': []
+        'checks': [],
+        'errors': []
     }
+
+    errors = result['errors']
 
     packs = {p.get('serial_number'): p for p in edi_data.get('packs', [])}
     lines = {li.get('po_line_number'): li for li in edi_data.get('line_items', [])}
@@ -23,12 +26,16 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
 
     for block in label_data.get('qr_blocks', []):
         block_result = {}
+        serial = block.get('serial_number')
 
         if 'asn_number' in block and edi_data.get('asn_number'):
             if block['asn_number'] == edi_data['asn_number']:
                 block_result['asn_number'] = 'match'
             else:
                 block_result['asn_number'] = 'mismatch'
+                errors.append(
+                    f"ASN number '{block['asn_number']}' does not match EDI '{edi_data['asn_number']}'"
+                )
                 result['success'] = False
 
         if 'po_number' in block and edi_data.get('po_number'):
@@ -36,6 +43,9 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
                 block_result['po_number'] = 'match'
             else:
                 block_result['po_number'] = 'mismatch'
+                errors.append(
+                    f"PO number '{block['po_number']}' does not match EDI '{edi_data['po_number']}'"
+                )
                 result['success'] = False
 
         po_line = block.get('po_line_number')
@@ -47,12 +57,16 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
             else:
                 result['success'] = False
                 block_result['part_number'] = 'mismatch'
+                errors.append(
+                    f"Part number '{block.get('part_number')}' does not match line item '{line_item.get('part_number')}'"
+                )
             qty_num = _to_number(block.get('quantity'))
             if qty_num is not None:
                 totals[po_line] = totals.get(po_line, 0.0) + qty_num
         elif po_line:
             block_result['po_line_number'] = 'unknown'
             result['success'] = False
+            errors.append(f"PO line number '{po_line}' not found in EDI")
 
         serial = block.get('serial_number')
         if serial and serial in packs:
@@ -62,9 +76,13 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
                 block_result['quantity'] = 'match'
             else:
                 block_result['quantity'] = 'mismatch'
+                errors.append(
+                    f"Quantity mismatch for serial '{serial}': label {block.get('quantity')} vs EDI {pack.get('quantity')}"
+                )
                 result['success'] = False
         elif serial:
             block_result['serial_number'] = 'missing'
+            errors.append(f"Serial number '{serial}' not found in EDI packs")
             result['success'] = False
         elif po_line and po_line in lines:
             line_item = lines[po_line]
@@ -72,6 +90,9 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
                 block_result['quantity'] = 'match'
             else:
                 block_result['quantity'] = 'mismatch'
+                errors.append(
+                    f"Quantity mismatch for line '{po_line}': label {block.get('quantity')} vs EDI {line_item.get('quantity')}"
+                )
                 result['success'] = False
 
         result['checks'].append(block_result)
@@ -87,6 +108,9 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
             else:
                 result['totals'][po_line] = 'mismatch'
                 result['success'] = False
+                errors.append(
+                    f"Total quantity mismatch for line '{po_line}': label {actual} vs EDI {expected}"
+                )
 
         # Check that each line item exists on at least one label
         result['line_items'] = {}
@@ -101,6 +125,9 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
             else:
                 result['line_items'][po_line] = 'missing'
                 result['success'] = False
+                errors.append(
+                    f"Line item '{po_line}' part '{line_item.get('part_number')}' missing from labels"
+                )
 
     return result
 

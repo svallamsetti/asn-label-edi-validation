@@ -76,3 +76,16 @@ def test_po_number_mismatch():
     assert result["checks"][0]["po_number"] == "mismatch"
     assert result["line_items"]["1"] == "match"
     assert result["success"] is False
+
+
+def test_error_messages_present():
+    label = {"qr_blocks": [{"po_number": "PO1", "serial_number": "1J1", "po_line_number": "1", "part_number": "PT001", "quantity": "5"}]}
+    edi = {
+        "po_number": "PO2",
+        "packs": [{"serial_number": "1J1", "quantity": "5"}],
+        "line_items": [{"po_line_number": "1", "part_number": "PT001", "quantity": "5"}]
+    }
+    result = compare_label_and_edi(label, edi)
+    assert result["success"] is False
+    assert result["errors"]
+    assert any("PO number" in e for e in result["errors"])

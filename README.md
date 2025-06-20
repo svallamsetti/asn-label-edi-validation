@@ -40,3 +40,7 @@ Line item quantities are additionally summed across labels to ensure
 the total matches the EDI quantity. The validator also verifies that
 each line item defined in the EDI file appears on at least one label
 with the same PO line and part number.
+
+If any mismatches are found, the validator sets `success` to `false` and
+adds human readable messages to an `errors` list in the JSON output so
+the user can easily identify the problem fields.
