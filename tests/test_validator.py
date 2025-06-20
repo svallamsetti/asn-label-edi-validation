@@ -94,6 +94,7 @@ def test_totals_fail_on_individual_mismatch():
     result = compare_label_and_edi(label, edi)
     assert result["totals"]["1"] == "mismatch"
     assert result["success"] is False
+    assert any("packs" in e for e in result["errors"])
 
 
 def test_po_number_mismatch():

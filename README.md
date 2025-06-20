@@ -45,3 +45,6 @@ one label with the same PO line and part number.
 If any mismatches are found, the validator sets `success` to `false` and
 adds human readable messages to an `errors` list in the JSON output so
 the user can easily identify the problem fields.
+When the overall quantity for a PO line matches the EDI value but one or
+more individual pack quantities differ, the validator reports a total
+mismatch with a message indicating that packs had conflicting quantities.

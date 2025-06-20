@@ -109,16 +109,23 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
             expected = _to_number(line_item.get('quantity'))
             actual = totals.get(po_line)
             if (
-                expected is not None and actual is not None and expected == actual
+                expected is not None
+                and actual is not None
+                and expected == actual
                 and qty_match.get(po_line, True)
             ):
                 result['totals'][po_line] = 'match'
             else:
                 result['totals'][po_line] = 'mismatch'
                 result['success'] = False
-                errors.append(
-                    f"Total quantity mismatch for line '{po_line}': label {actual} vs EDI {expected}"
-                )
+                if expected == actual and not qty_match.get(po_line, True):
+                    errors.append(
+                        f"Quantity mismatch for one or more packs on line '{po_line}'"
+                    )
+                else:
+                    errors.append(
+                        f"Total quantity mismatch for line '{po_line}': label {actual} vs EDI {expected}"
+                    )
 
         # Check that each line item exists on at least one label
         result['line_items'] = {}
