@@ -40,8 +40,11 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
 
         po_line = block.get('po_line_number')
         if po_line and po_line in lines:
+            block_result['po_line_number'] = 'match'
             line_item = lines[po_line]
-            if block.get('part_number') != line_item.get('part_number'):
+            if block.get('part_number') == line_item.get('part_number'):
+                block_result['part_number'] = 'match'
+            else:
                 result['success'] = False
                 block_result['part_number'] = 'mismatch'
             qty_num = _to_number(block.get('quantity'))
@@ -53,16 +56,21 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
 
         serial = block.get('serial_number')
         if serial and serial in packs:
+            block_result['serial_number'] = 'match'
             pack = packs[serial]
-            if block.get('quantity') != pack.get('quantity'):
+            if block.get('quantity') == pack.get('quantity'):
+                block_result['quantity'] = 'match'
+            else:
                 block_result['quantity'] = 'mismatch'
                 result['success'] = False
         elif serial:
-            block_result['pack'] = 'missing'
+            block_result['serial_number'] = 'missing'
             result['success'] = False
         elif po_line and po_line in lines:
             line_item = lines[po_line]
-            if block.get('quantity') != line_item.get('quantity'):
+            if block.get('quantity') == line_item.get('quantity'):
+                block_result['quantity'] = 'match'
+            else:
                 block_result['quantity'] = 'mismatch'
                 result['success'] = False
 
@@ -78,6 +86,20 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
                 result['totals'][po_line] = 'match'
             else:
                 result['totals'][po_line] = 'mismatch'
+                result['success'] = False
+
+        # Check that each line item exists on at least one label
+        result['line_items'] = {}
+        for po_line, line_item in lines.items():
+            matched = any(
+                b.get('po_line_number') == po_line and
+                b.get('part_number') == line_item.get('part_number')
+                for b in label_data.get('qr_blocks', [])
+            )
+            if matched:
+                result['line_items'][po_line] = 'match'
+            else:
+                result['line_items'][po_line] = 'missing'
                 result['success'] = False
 
     return result

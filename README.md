@@ -11,7 +11,9 @@ python -m asn_validator.cli path/to/label.pdf path/to/edi.txt
 ```
 
 The script prints a JSON structure with the parsed label data, parsed
-EDI data and the result of all comparisons.
+EDI data and the result of all comparisons. Each QR block produces a
+check entry indicating whether its serial number, quantity and other
+fields matched the EDI packs or line items.
 
 Each QR code block is parsed into fields such as `serial_number`,
 `po_number`, `quantity`, and an optional `supplier_serial_number`. Only
@@ -35,4 +37,6 @@ Each QR block is checked against the EDI data. The validator compares
 `asn_number`, `po_number`, `po_line_number`, `part_number` and the
 quantity of each label with the corresponding pack or line item.
 Line item quantities are additionally summed across labels to ensure
-the total matches the EDI quantity.
+the total matches the EDI quantity. The validator also verifies that
+each line item defined in the EDI file appears on at least one label
+with the same PO line and part number.

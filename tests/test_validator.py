@@ -27,6 +27,10 @@ def test_compare_packs():
     assert result["success"] is True
     assert result["checks"][0]["asn_number"] == "match"
     assert result["checks"][0]["po_number"] == "match"
+    assert result["checks"][0]["serial_number"] == "match"
+    assert result["checks"][0]["quantity"] == "match"
+    assert result["checks"][0]["po_line_number"] == "match"
+    assert result["checks"][0]["part_number"] == "match"
 
 
 def test_line_item_quantity_sum():
@@ -58,6 +62,7 @@ def test_line_item_quantity_sum():
     result = compare_label_and_edi(label, edi)
     assert result["success"] is True
     assert result["totals"]["1"] == "match"
+    assert result["line_items"]["1"] == "match"
 
 
 def test_po_number_mismatch():
@@ -69,4 +74,5 @@ def test_po_number_mismatch():
     }
     result = compare_label_and_edi(label, edi)
     assert result["checks"][0]["po_number"] == "mismatch"
+    assert result["line_items"]["1"] == "match"
     assert result["success"] is False
