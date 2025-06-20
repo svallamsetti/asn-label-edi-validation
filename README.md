@@ -17,3 +17,7 @@ EDI data and the result of all comparisons.
 
 Image, PDF and QR parsing requires `pdf2image`, `Pillow` and `pyzbar` to
 be installed. These libraries are not included by default.
+
+The EDI parser tolerates formatted files that contain line breaks between
+segments, so the input may include or omit newlines after each `~` or `'
+` character.

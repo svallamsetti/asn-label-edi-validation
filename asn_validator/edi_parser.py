@@ -2,9 +2,13 @@ from typing import Dict, Any, List
 
 
 def parse_x12(contents: str) -> Dict[str, Any]:
-    segments = contents.strip().split('~')
+    # Split using the segment terminator and remove any leading/trailing
+    # whitespace so that formatted EDI files with line breaks are handled
+    # correctly (e.g. segments may start with a newline character).
+    segments = [s.strip() for s in contents.strip().split('~') if s.strip()]
     data = {}
     for seg in segments:
+        seg = seg.strip()
         parts = seg.split('*')
         tag = parts[0]
         if tag == 'BSN':
@@ -22,9 +26,12 @@ def parse_x12(contents: str) -> Dict[str, Any]:
 
 
 def parse_edifact(contents: str) -> Dict[str, Any]:
-    segments = contents.strip().split("'")
+    # EDIFACT segments are separated by an apostrophe. Lines may contain
+    # additional whitespace or newlines which should be ignored.
+    segments = [s.strip() for s in contents.strip().split("'") if s.strip()]
     data = {}
     for seg in segments:
+        seg = seg.strip()
         parts = seg.split('+')
         tag = parts[0]
         if tag == 'BGM' and len(parts) > 2:
