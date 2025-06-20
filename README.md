@@ -26,3 +26,7 @@ be installed. These libraries are not included by default.
 The EDI parser tolerates formatted files that contain line breaks between
 segments, so the input may include or omit newlines after each `~` or `'
 ` character.
+
+The X12 parser also reads purchase order numbers from `PRF` segments,
+line items via `LIN` with `SN1` for quantities, and pack information
+from `HL` loops that contain `SN1` and `MAN` segments.
