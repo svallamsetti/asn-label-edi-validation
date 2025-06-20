@@ -25,6 +25,8 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
         except ValueError:
             return None
 
+    barcodes = set(label_data.get('barcodes', []))
+
     for block in label_data.get('qr_blocks', []):
         block_result = {}
         serial = block.get('serial_number')
@@ -71,6 +73,14 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
             errors.append(f"PO line number '{po_line}' not found in EDI")
 
         serial = block.get('serial_number')
+        if serial:
+            if serial in barcodes:
+                block_result['serial_barcode'] = 'match'
+            else:
+                block_result['serial_barcode'] = 'mismatch'
+                errors.append(f"Barcode for serial number '{serial}' not found")
+                result['success'] = False
+
         if serial and serial in packs:
             block_result['serial_number'] = 'match'
             pack = packs[serial]
@@ -99,6 +109,15 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
                 )
                 result['success'] = False
                 qty_match[po_line] = False
+
+        qty_val = block.get('quantity')
+        if qty_val:
+            if qty_val in barcodes:
+                block_result['quantity_barcode'] = 'match'
+            else:
+                block_result['quantity_barcode'] = 'mismatch'
+                errors.append(f"Barcode for quantity '{qty_val}' not found")
+                result['success'] = False
 
         result['checks'].append(block_result)
 

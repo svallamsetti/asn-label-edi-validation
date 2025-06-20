@@ -20,6 +20,11 @@ Each QR code block is parsed into fields such as `serial_number`,
 non-empty fields are included in the output and duplicate serial numbers
 are ignored.
 
+In addition to QR data, any 1D barcodes found on the label are decoded.
+The validator confirms that a barcode exists for each QR block's serial
+number and quantity, ensuring the printed values match the encoded
+barcodes.
+
 ## Notes
 
 Image, PDF and QR parsing requires `pdf2image`, `Pillow` and `pyzbar` to

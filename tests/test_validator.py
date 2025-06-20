@@ -16,6 +16,8 @@ def test_compare_packs():
                 "part_number": "PT001",
             }
         ]
+        ,
+        "barcodes": ["1J0001", "10"]
     }
     edi = {
         "asn_number": "000123",
@@ -49,6 +51,8 @@ def test_line_item_quantity_sum():
                 "quantity": "5",
             },
         ]
+        ,
+        "barcodes": ["1J1", "1J2", "5"]
     }
     edi = {
         "packs": [
@@ -81,6 +85,8 @@ def test_totals_fail_on_individual_mismatch():
                 "quantity": "8",
             },
         ]
+        ,
+        "barcodes": ["1J1", "1J2", "12", "8"]
     }
     edi = {
         "packs": [
@@ -98,7 +104,10 @@ def test_totals_fail_on_individual_mismatch():
 
 
 def test_po_number_mismatch():
-    label = {"qr_blocks": [{"po_number": "PO1", "serial_number": "1J1", "po_line_number": "1", "part_number": "PT001", "quantity": "5"}]}
+    label = {
+        "qr_blocks": [{"po_number": "PO1", "serial_number": "1J1", "po_line_number": "1", "part_number": "PT001", "quantity": "5"}],
+        "barcodes": ["1J1", "5"]
+    }
     edi = {
         "po_number": "PO2",
         "packs": [{"serial_number": "1J1", "quantity": "5"}],
@@ -111,7 +120,10 @@ def test_po_number_mismatch():
 
 
 def test_error_messages_present():
-    label = {"qr_blocks": [{"po_number": "PO1", "serial_number": "1J1", "po_line_number": "1", "part_number": "PT001", "quantity": "5"}]}
+    label = {
+        "qr_blocks": [{"po_number": "PO1", "serial_number": "1J1", "po_line_number": "1", "part_number": "PT001", "quantity": "5"}],
+        "barcodes": ["1J1", "5"]
+    }
     edi = {
         "po_number": "PO2",
         "packs": [{"serial_number": "1J1", "quantity": "5"}],
@@ -121,3 +133,28 @@ def test_error_messages_present():
     assert result["success"] is False
     assert result["errors"]
     assert any("PO number" in e for e in result["errors"])
+
+
+def test_barcode_matches():
+    label = {
+        "qr_blocks": [{"serial_number": "1JX", "quantity": "3"}],
+        "barcodes": ["1JX", "3"]
+    }
+    edi = {"packs": [{"serial_number": "1JX", "quantity": "3"}]}
+    result = compare_label_and_edi(label, edi)
+    checks = result["checks"][0]
+    assert checks["serial_barcode"] == "match"
+    assert checks["quantity_barcode"] == "match"
+
+
+def test_missing_barcode_fails():
+    label = {
+        "qr_blocks": [{"serial_number": "1JX", "quantity": "3"}],
+        "barcodes": []
+    }
+    edi = {"packs": [{"serial_number": "1JX", "quantity": "3"}]}
+    result = compare_label_and_edi(label, edi)
+    checks = result["checks"][0]
+    assert checks["serial_barcode"] == "mismatch"
+    assert checks["quantity_barcode"] == "mismatch"
+    assert result["success"] is False

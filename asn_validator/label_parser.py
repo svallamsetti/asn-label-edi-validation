@@ -1,5 +1,4 @@
-import json
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 try:
     from pdf2image import convert_from_path
@@ -11,30 +10,40 @@ except Exception:
     decode = None
 
 
-def _extract_qr_from_image(img) -> List[str]:
+def _extract_codes_from_image(img) -> tuple[list[str], list[str]]:
+    """Return QR code strings and all other barcode values."""
     if decode is None:
         raise RuntimeError("pyzbar is required for QR code parsing")
-    results = []
+    qr_values: list[str] = []
+    barcode_values: list[str] = []
     for code in decode(img):
-        if code.type in {"QRCODE", "CODE128", "CODE39"}:
-            results.append(code.data.decode('utf-8'))
-    return results
+        value = code.data.decode("utf-8")
+        if code.type == "QRCODE":
+            qr_values.append(value)
+        else:
+            barcode_values.append(value)
+    return qr_values, barcode_values
 
 
 def parse_label(path: str) -> Dict[str, Any]:
-    """Parse an ASN label PDF or image and return extracted QR data."""
-    qr_data: List[str] = []
+    """Parse an ASN label PDF or image and return extracted QR and barcode data."""
+    qr_data: list[str] = []
+    barcodes: list[str] = []
     if path.lower().endswith('.pdf'):
         if convert_from_path is None:
             raise RuntimeError('pdf2image is required to parse PDF labels')
         pages = convert_from_path(path)
         for page in pages:
-            qr_data.extend(_extract_qr_from_image(page))
+            qrs, codes = _extract_codes_from_image(page)
+            qr_data.extend(qrs)
+            barcodes.extend(codes)
     else:
         if Image is None:
             raise RuntimeError('Pillow is required to parse image labels')
         img = Image.open(path)
-        qr_data.extend(_extract_qr_from_image(img))
+        qrs, codes = _extract_codes_from_image(img)
+        qr_data.extend(qrs)
+        barcodes.extend(codes)
     parsed_blocks = []
     seen_serials = set()
     for s in qr_data:
@@ -43,7 +52,7 @@ def parse_label(path: str) -> Dict[str, Any]:
         if serial and serial not in seen_serials:
             seen_serials.add(serial)
             parsed_blocks.append(block)
-    return {"qr_blocks": parsed_blocks}
+    return {"qr_blocks": parsed_blocks, "barcodes": list(dict.fromkeys(barcodes))}
 
 
 def _parse_qr_string(data: str) -> Dict[str, Any]:
