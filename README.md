@@ -36,10 +36,11 @@ from `HL` loops that contain `SN1` and `MAN` segments.
 Each QR block is checked against the EDI data. The validator compares
 `asn_number`, `po_number`, `po_line_number`, `part_number` and the
 quantity of each label with the corresponding pack or line item.
-Line item quantities are additionally summed across labels to ensure
-the total matches the EDI quantity. The validator also verifies that
-each line item defined in the EDI file appears on at least one label
-with the same PO line and part number.
+Line item quantities are additionally summed across labels. A total is
+reported as a `match` only when this sum equals the quantity from the EDI
+*and* every pack's quantity matched individually. The validator also
+verifies that each line item defined in the EDI file appears on at least
+one label with the same PO line and part number.
 
 If any mismatches are found, the validator sets `success` to `false` and
 adds human readable messages to an `errors` list in the JSON output so

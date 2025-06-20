@@ -17,6 +17,7 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
     packs = {p.get('serial_number'): p for p in edi_data.get('packs', [])}
     lines = {li.get('po_line_number'): li for li in edi_data.get('line_items', [])}
     totals: Dict[str, float] = {}
+    qty_match: Dict[str, bool] = {}
 
     def _to_number(val: Optional[str]) -> Optional[float]:
         try:
@@ -60,6 +61,7 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
                 errors.append(
                     f"Part number '{block.get('part_number')}' does not match line item '{line_item.get('part_number')}'"
                 )
+            qty_match.setdefault(po_line, True)
             qty_num = _to_number(block.get('quantity'))
             if qty_num is not None:
                 totals[po_line] = totals.get(po_line, 0.0) + qty_num
@@ -80,6 +82,8 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
                     f"Quantity mismatch for serial '{serial}': label {block.get('quantity')} vs EDI {pack.get('quantity')}"
                 )
                 result['success'] = False
+                if po_line:
+                    qty_match[po_line] = False
         elif serial:
             block_result['serial_number'] = 'missing'
             errors.append(f"Serial number '{serial}' not found in EDI packs")
@@ -94,6 +98,7 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
                     f"Quantity mismatch for line '{po_line}': label {block.get('quantity')} vs EDI {line_item.get('quantity')}"
                 )
                 result['success'] = False
+                qty_match[po_line] = False
 
         result['checks'].append(block_result)
 
@@ -103,7 +108,10 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
         for po_line, line_item in lines.items():
             expected = _to_number(line_item.get('quantity'))
             actual = totals.get(po_line)
-            if expected is not None and actual is not None and expected == actual:
+            if (
+                expected is not None and actual is not None and expected == actual
+                and qty_match.get(po_line, True)
+            ):
                 result['totals'][po_line] = 'match'
             else:
                 result['totals'][po_line] = 'mismatch'
