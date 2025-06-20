@@ -13,6 +13,11 @@ python -m asn_validator.cli path/to/label.pdf path/to/edi.txt
 The script prints a JSON structure with the parsed label data, parsed
 EDI data and the result of all comparisons.
 
+Each QR code block is parsed into fields such as `serial_number`,
+`po_number`, `quantity`, and an optional `supplier_serial_number`. Only
+non-empty fields are included in the output and duplicate serial numbers
+are ignored.
+
 ## Notes
 
 Image, PDF and QR parsing requires `pdf2image`, `Pillow` and `pyzbar` to

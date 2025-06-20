@@ -35,7 +35,14 @@ def parse_label(path: str) -> Dict[str, Any]:
             raise RuntimeError('Pillow is required to parse image labels')
         img = Image.open(path)
         qr_data.extend(_extract_qr_from_image(img))
-    parsed_blocks = [_parse_qr_string(s) for s in qr_data]
+    parsed_blocks = []
+    seen_serials = set()
+    for s in qr_data:
+        block = _parse_qr_string(s)
+        serial = block.get("serial_number")
+        if serial and serial not in seen_serials:
+            seen_serials.add(serial)
+            parsed_blocks.append(block)
     return {"qr_blocks": parsed_blocks}
 
 
@@ -51,7 +58,7 @@ def _parse_qr_string(data: str) -> Dict[str, Any]:
         "indicator",
         "message_type",
         "asn_number",
-        "lpn",
+        "serial_number",
         "lot_number",
         "po_number",
         "po_line_number",
@@ -63,10 +70,12 @@ def _parse_qr_string(data: str) -> Dict[str, Any]:
         "expiration_date",
         "qml",
         "pcd",
-        "serial_number",
+        "supplier_serial_number",
     ]
     result = {}
     for idx, field in enumerate(mapping):
         if idx < len(parts):
-            result[field] = parts[idx]
+            value = parts[idx]
+            if value:
+                result[field] = value
     return result
