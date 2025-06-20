@@ -43,9 +43,10 @@ def _parse_qr_string(data: str) -> Dict[str, Any]:
     """Parse QR string according to documented format."""
     # QR example format:
     # [)>\x1e06\x1dASNNO\x1d1JSerial\x1dLot\x1dPO\x1dPOLine\x1dPart\x1dDesc\x1dQty\x1dUOM
+    # Replace ASCII group/record separators with a placeholder and split.
+    # Do not discard empty fields so the mapping stays aligned even when
+    # optional fields are missing.
     parts = data.replace('\u001e', '?').replace('\u001d', '?').split('?')
-    # Remove empty entries
-    parts = [p for p in parts if p]
     mapping = [
         "indicator",
         "message_type",
