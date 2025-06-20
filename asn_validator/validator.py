@@ -31,6 +31,13 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
                 block_result['asn_number'] = 'mismatch'
                 result['success'] = False
 
+        if 'po_number' in block and edi_data.get('po_number'):
+            if block['po_number'] == edi_data['po_number']:
+                block_result['po_number'] = 'match'
+            else:
+                block_result['po_number'] = 'mismatch'
+                result['success'] = False
+
         po_line = block.get('po_line_number')
         if po_line and po_line in lines:
             line_item = lines[po_line]
@@ -48,11 +55,16 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
         if serial and serial in packs:
             pack = packs[serial]
             if block.get('quantity') != pack.get('quantity'):
-                block_result['pack_quantity'] = 'mismatch'
+                block_result['quantity'] = 'mismatch'
                 result['success'] = False
         elif serial:
             block_result['pack'] = 'missing'
             result['success'] = False
+        elif po_line and po_line in lines:
+            line_item = lines[po_line]
+            if block.get('quantity') != line_item.get('quantity'):
+                block_result['quantity'] = 'mismatch'
+                result['success'] = False
 
         result['checks'].append(block_result)
 

@@ -9,6 +9,7 @@ def test_compare_packs():
         "qr_blocks": [
             {
                 "asn_number": "000123",
+                "po_number": "PO12345",
                 "serial_number": "1J0001",
                 "quantity": "10",
                 "po_line_number": "1",
@@ -25,6 +26,7 @@ def test_compare_packs():
     result = compare_label_and_edi(label, edi)
     assert result["success"] is True
     assert result["checks"][0]["asn_number"] == "match"
+    assert result["checks"][0]["po_number"] == "match"
 
 
 def test_line_item_quantity_sum():
@@ -56,3 +58,15 @@ def test_line_item_quantity_sum():
     result = compare_label_and_edi(label, edi)
     assert result["success"] is True
     assert result["totals"]["1"] == "match"
+
+
+def test_po_number_mismatch():
+    label = {"qr_blocks": [{"po_number": "PO1", "serial_number": "1J1", "po_line_number": "1", "part_number": "PT001", "quantity": "5"}]}
+    edi = {
+        "po_number": "PO2",
+        "packs": [{"serial_number": "1J1", "quantity": "5"}],
+        "line_items": [{"po_line_number": "1", "part_number": "PT001", "quantity": "5"}]
+    }
+    result = compare_label_and_edi(label, edi)
+    assert result["checks"][0]["po_number"] == "mismatch"
+    assert result["success"] is False

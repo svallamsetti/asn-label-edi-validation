@@ -31,6 +31,8 @@ The X12 parser also reads purchase order numbers from `PRF` segments,
 line items via `LIN` with `SN1` for quantities, and pack information
 from `HL` loops that contain `SN1` and `MAN` segments.
 
-Line item quantities are validated by summing all 1J label quantities
-for the same PO line and comparing the total against the EDI line
-item quantity.
+Each QR block is checked against the EDI data. The validator compares
+`asn_number`, `po_number`, `po_line_number`, `part_number` and the
+quantity of each label with the corresponding pack or line item.
+Line item quantities are additionally summed across labels to ensure
+the total matches the EDI quantity.
