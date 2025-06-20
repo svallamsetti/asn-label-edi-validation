@@ -30,3 +30,7 @@ segments, so the input may include or omit newlines after each `~` or `'
 The X12 parser also reads purchase order numbers from `PRF` segments,
 line items via `LIN` with `SN1` for quantities, and pack information
 from `HL` loops that contain `SN1` and `MAN` segments.
+
+Line item quantities are validated by summing all 1J label quantities
+for the same PO line and comparing the total against the EDI line
+item quantity.
