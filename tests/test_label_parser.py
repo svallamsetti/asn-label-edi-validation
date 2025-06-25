@@ -35,3 +35,21 @@ def test_parse_text_fields():
     assert fields["po_line_number"] == "1"
     assert fields["part_number"] == "PT001"
     assert fields["qty"] == "10"
+
+
+def test_parse_multiline_addresses():
+    text = """
+    SHIP FROM: XPEL 3251 I-35
+    San Antonio,TX 78219
+    (59366)
+    US
+    SHIP TO: 3301 West Kerrick Rd,
+    NORMAL,IL 61761
+    PO NO. 5500005721 00030
+    PO LINE NO. 00030
+    """
+    fields = _parse_text_fields(text)
+    assert "San Antonio" in fields["ship_from"]
+    assert "Kerrick" in fields["ship_to"]
+    assert fields["po_number"] == "5500005721"
+    assert fields["po_line_number"] == "00030"

@@ -33,9 +33,16 @@ def _extract_codes_from_image(img) -> tuple[list[str], list[str]]:
 
 def _parse_text_fields(text: str) -> Dict[str, str]:
     """Extract key fields from OCR text."""
-    patterns = {
-        'ship_from': r'SHIP\s*FROM[:\s]*([^\n]+)',
-        'ship_to': r'SHIP\s*TO[:\s]*([^\n]+)',
+    address_patterns = {
+        'ship_from': r'SHIP\s*FROM[:\s]*(.*?)(?=SHIP\s*TO|$)',
+        'ship_to': r'SHIP\s*TO[:\s]*(.*?)(?=P/?N|PO\s*NO|PO\s*LINE|QTY|DESCRIPTION|$)',
+    }
+    fields: Dict[str, str] = {}
+    for key, pat in address_patterns.items():
+        m = re.search(pat, text, re.IGNORECASE | re.DOTALL)
+        fields[key] = m.group(1).strip() if m else ''
+
+    other_patterns = {
         'qty': r'QTY(?:\(Q\))?[:\s]*([^\n]+)',
         'part_number': r'P/?N(?:\(P\))?[:\s]*([^\n]+)',
         'description': r'DESCRIPTION[:\s]*([^\n]+)',
@@ -47,10 +54,15 @@ def _parse_text_fields(text: str) -> Dict[str, str]:
         'pcd': r'PCD[:\s]*([^\n]+)',
         'exp_date': r'EXP\s*DATE[:\s]*([^\n]+)',
     }
-    fields: Dict[str, str] = {}
-    for key, pat in patterns.items():
+    for key, pat in other_patterns.items():
         m = re.search(pat, text, re.IGNORECASE)
-        fields[key] = m.group(1).strip() if m else ''
+        if m:
+            val = m.group(1).strip()
+            if key in ('po_number', 'po_line_number'):
+                val = val.split()[0]
+            fields[key] = val
+        else:
+            fields[key] = ''
     m = re.search(r'\b([125]J)\b', text)
     fields['label_type'] = m.group(1) if m else ''
     return fields
