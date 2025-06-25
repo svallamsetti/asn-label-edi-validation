@@ -31,3 +31,10 @@ def test_parse_x12_handles_newlines_and_loops():
     assert item["part_number"] == "PT001"
     assert item["quantity"] == "12"
 
+
+def test_parse_x12_ship_addresses():
+    edi = "N1*SF*SUP~N1*ST*CUST~"
+    data = parse_x12(edi)
+    assert data["ship_from"] == "SUP"
+    assert data["ship_to"] == "CUST"
+

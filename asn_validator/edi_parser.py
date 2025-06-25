@@ -29,6 +29,12 @@ def parse_x12(contents: str) -> Dict[str, Any]:
                 current_pack = {}
                 data.setdefault('packs', []).append(current_pack)
 
+        elif tag == 'N1' and len(parts) > 2:
+            if parts[1] == 'SF':
+                data['ship_from'] = parts[2]
+            elif parts[1] == 'ST':
+                data['ship_to'] = parts[2]
+
         elif tag == 'LIN' and current_item is not None:
             # LIN*PO_LINE_NO**BP*PARTNO
             if len(parts) > 1:
@@ -77,6 +83,11 @@ def parse_edifact(contents: str) -> Dict[str, Any]:
                 'po_line_number': parts[1],
                 'part_number': parts[2] if len(parts) > 2 else '',
             })
+        elif tag == 'NAD' and len(parts) > 2:
+            if parts[1] == 'SF':
+                data['ship_from'] = parts[2]
+            elif parts[1] == 'ST':
+                data['ship_to'] = parts[2]
         elif tag == 'QTY' and data.get('line_items'):
             qty_parts = parts[1].split(':')
             data['line_items'][-1]['quantity'] = qty_parts[1]

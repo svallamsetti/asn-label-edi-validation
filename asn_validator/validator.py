@@ -19,6 +19,51 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
     totals: Dict[str, float] = {}
     qty_match: Dict[str, bool] = {}
 
+    # compare text fields extracted from the label
+    text_fields = label_data.get('text_fields', {})
+    if text_fields:
+        result['text_fields'] = {}
+        def _cmp(field, edi_value):
+            if field in text_fields and edi_value is not None:
+                if text_fields[field] == edi_value:
+                    result['text_fields'][field] = 'match'
+                else:
+                    result['text_fields'][field] = 'mismatch'
+                    errors.append(
+                        f"{field.replace('_', ' ').title()} '{text_fields[field]}' does not match EDI '{edi_value}'"
+                    )
+                    result['success'] = False
+
+        _cmp('ship_from', edi_data.get('ship_from'))
+        _cmp('ship_to', edi_data.get('ship_to'))
+        _cmp('po_number', edi_data.get('po_number'))
+
+        po_line = text_fields.get('po_line_number')
+        if po_line:
+            line_item = lines.get(po_line)
+            if line_item:
+                if text_fields.get('part_number') == line_item.get('part_number'):
+                    result['text_fields']['po_line_number'] = 'match'
+                else:
+                    result['text_fields']['po_line_number'] = 'mismatch'
+                    errors.append(
+                        f"Part number '{text_fields.get('part_number')}' does not match line item '{line_item.get('part_number')}'"
+                    )
+                    result['success'] = False
+                if 'quantity' in line_item and text_fields.get('qty'):
+                    if text_fields['qty'] == line_item.get('quantity'):
+                        result['text_fields']['qty'] = 'match'
+                    else:
+                        result['text_fields']['qty'] = 'mismatch'
+                        errors.append(
+                            f"Quantity '{text_fields['qty']}' does not match EDI '{line_item.get('quantity')}'"
+                        )
+                        result['success'] = False
+            else:
+                result['text_fields']['po_line_number'] = 'missing'
+                result['success'] = False
+                errors.append(f"PO line number '{po_line}' not found in EDI")
+
     def _to_number(val: Optional[str]) -> Optional[float]:
         try:
             return float(val) if val is not None else None

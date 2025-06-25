@@ -158,3 +158,27 @@ def test_missing_barcode_fails():
     assert checks["serial_barcode"] == "mismatch"
     assert checks["quantity_barcode"] == "mismatch"
     assert result["success"] is False
+
+
+def test_text_field_comparison():
+    label = {
+        "qr_blocks": [],
+        "barcodes": [],
+        "text_fields": {
+            "ship_from": "SUP",
+            "ship_to": "CUST",
+            "po_number": "PO1",
+            "po_line_number": "1",
+            "part_number": "PT001",
+            "qty": "10",
+        },
+    }
+    edi = {
+        "ship_from": "SUP",
+        "ship_to": "CUST",
+        "po_number": "PO1",
+        "line_items": [{"po_line_number": "1", "part_number": "PT001", "quantity": "10"}],
+    }
+    result = compare_label_and_edi(label, edi)
+    assert result["text_fields"]["po_line_number"] == "match"
+    assert result["text_fields"]["ship_from"] == "match"

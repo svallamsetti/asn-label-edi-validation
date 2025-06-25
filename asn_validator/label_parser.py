@@ -1,4 +1,10 @@
 from typing import Dict, Any
+import re
+
+try:
+    import pytesseract
+except Exception:
+    pytesseract = None
 
 try:
     from pdf2image import convert_from_path
@@ -25,10 +31,43 @@ def _extract_codes_from_image(img) -> tuple[list[str], list[str]]:
     return qr_values, barcode_values
 
 
+def _parse_text_fields(text: str) -> Dict[str, str]:
+    """Extract key fields from OCR text."""
+    patterns = {
+        'ship_from': r'SHIP\s*FROM[:\s]*([^\n]+)',
+        'ship_to': r'SHIP\s*TO[:\s]*([^\n]+)',
+        'qty': r'QTY(?:\(Q\))?[:\s]*([^\n]+)',
+        'part_number': r'P/?N(?:\(P\))?[:\s]*([^\n]+)',
+        'description': r'DESCRIPTION[:\s]*([^\n]+)',
+        'po_number': r'PO\s*NO\.?:?\s*([^\n]+)',
+        'po_line_number': r'PO\s*LINE\s*NO\.?:?\s*([^\n]+)',
+        'prod_date': r'PROD\s*DATE[:\s]*([^\n]+)',
+        'lot_number': r'LOT\s*NO\.?:?\s*([^\n]+)',
+        'qml': r'QML[:\s]*([^\n]+)',
+        'pcd': r'PCD[:\s]*([^\n]+)',
+        'exp_date': r'EXP\s*DATE[:\s]*([^\n]+)',
+    }
+    fields: Dict[str, str] = {}
+    for key, pat in patterns.items():
+        m = re.search(pat, text, re.IGNORECASE)
+        fields[key] = m.group(1).strip() if m else ''
+    m = re.search(r'\b([125]J)\b', text)
+    fields['label_type'] = m.group(1) if m else ''
+    return fields
+
+
+def _extract_text_fields_from_image(img) -> Dict[str, str]:
+    if pytesseract is None:
+        raise RuntimeError('pytesseract is required for text extraction')
+    text = pytesseract.image_to_string(img)
+    return _parse_text_fields(text)
+
+
 def parse_label(path: str) -> Dict[str, Any]:
     """Parse an ASN label PDF or image and return extracted QR and barcode data."""
     qr_data: list[str] = []
     barcodes: list[str] = []
+    text_fields: Dict[str, str] = {}
     if path.lower().endswith('.pdf'):
         if convert_from_path is None:
             raise RuntimeError('pdf2image is required to parse PDF labels')
@@ -37,6 +76,13 @@ def parse_label(path: str) -> Dict[str, Any]:
             qrs, codes = _extract_codes_from_image(page)
             qr_data.extend(qrs)
             barcodes.extend(codes)
+            try:
+                fields = _extract_text_fields_from_image(page)
+                for k, v in fields.items():
+                    if v and not text_fields.get(k):
+                        text_fields[k] = v
+            except Exception:
+                pass
     else:
         if Image is None:
             raise RuntimeError('Pillow is required to parse image labels')
@@ -44,6 +90,13 @@ def parse_label(path: str) -> Dict[str, Any]:
         qrs, codes = _extract_codes_from_image(img)
         qr_data.extend(qrs)
         barcodes.extend(codes)
+        try:
+            fields = _extract_text_fields_from_image(img)
+            for k, v in fields.items():
+                if v and not text_fields.get(k):
+                    text_fields[k] = v
+        except Exception:
+            pass
     parsed_blocks = []
     seen_serials = set()
     for s in qr_data:
@@ -52,7 +105,13 @@ def parse_label(path: str) -> Dict[str, Any]:
         if serial and serial not in seen_serials:
             seen_serials.add(serial)
             parsed_blocks.append(block)
-    return {"qr_blocks": parsed_blocks, "barcodes": list(dict.fromkeys(barcodes))}
+    if text_fields:
+        print("Extracted text fields:", text_fields)
+    return {
+        "qr_blocks": parsed_blocks,
+        "barcodes": list(dict.fromkeys(barcodes)),
+        "text_fields": text_fields,
+    }
 
 
 def _parse_qr_string(data: str) -> Dict[str, Any]:

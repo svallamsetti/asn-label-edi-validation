@@ -25,6 +25,12 @@ The validator confirms that a barcode exists for each QR block's serial
 number and quantity, ensuring the printed values match the encoded
 barcodes.
 
+Printed text on the label is also read via OCR (requires `pytesseract`).
+Fields such as *SHIP FROM*, *SHIP TO*, *PO NO.*, *PO LINE NO.* and
+*QTY* are extracted and printed for debugging. When the EDI contains the
+same information, these values are compared and reported as matches or
+mismatches in the JSON output.
+
 ## Notes
 
 Image, PDF and QR parsing requires `pdf2image`, `Pillow` and `pyzbar` to
