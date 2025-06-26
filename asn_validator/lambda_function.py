@@ -534,9 +534,12 @@ def lambda_handler(event, context):
 
     base = os.path.splitext(os.path.basename(edi_key))[0]
     label_key: Optional[str] = None
-    print(f"[DEBUG] Looking for label files matching {base}")
+    edi_dir = os.path.dirname(edi_key)
+    base_dir = edi_dir[:-4] if edi_dir.lower().endswith('/edi') else edi_dir
+    labels_prefix = os.path.join(base_dir, 'labels')
+    print(f"[DEBUG] Looking for label files matching {base} under {labels_prefix}")
     for ext in (".pdf", ".png", ".jpg", ".jpeg"):
-        candidate = f"labels/{base}{ext}"
+        candidate = f"{labels_prefix}/{base}{ext}"
         print(f"[DEBUG] Checking for {candidate}")
         try:
             s3.head_object(Bucket=bucket, Key=candidate)
