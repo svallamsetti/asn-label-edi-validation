@@ -1,4 +1,4 @@
-from lambda_function import (
+from .lambda_function import (
     parse_edi,
     parse_x12,
     parse_edifact,

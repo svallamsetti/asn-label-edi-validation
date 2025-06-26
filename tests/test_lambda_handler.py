@@ -4,8 +4,7 @@ from unittest.mock import patch, MagicMock
 
 sys.modules.setdefault('boto3', MagicMock())
 
-from asn_validator.lambda_handler import lambda_handler
-import lambda_function
+from asn_validator.lambda_function import lambda_handler
 
 
 def test_lambda_handler_triggers_validate(tmp_path):
@@ -26,7 +25,7 @@ def test_lambda_handler_triggers_validate(tmp_path):
     }
 
     with patch('boto3.client') as mock_client, \
-         patch('asn_validator.lambda_handler.validate') as mock_validate:
+         patch('asn_validator.lambda_function.validate') as mock_validate:
         s3 = MagicMock()
         s3.download_file.side_effect = fake_download
         mock_client.return_value = s3
@@ -58,7 +57,7 @@ def test_lambda_handler_waits_for_companion(tmp_path):
             f.write(b'x')
 
     with patch('boto3.client') as mock_client, \
-         patch('asn_validator.lambda_handler.validate') as mock_validate:
+         patch('asn_validator.lambda_function.validate') as mock_validate:
         s3 = MagicMock()
         s3.head_object.side_effect = fake_head
         s3.download_file.side_effect = fake_download
@@ -85,7 +84,7 @@ def test_lambda_handler_missing_companion(tmp_path):
         raise NotFound()
 
     with patch('boto3.client') as mock_client, \
-         patch('asn_validator.lambda_handler.validate') as mock_validate:
+         patch('asn_validator.lambda_function.validate') as mock_validate:
         s3 = MagicMock()
         s3.head_object.side_effect = fake_head
         mock_client.return_value = s3
@@ -95,5 +94,3 @@ def test_lambda_handler_missing_companion(tmp_path):
     assert result == {'success': False, 'error': 'Missing label or EDI file'}
 
 
-def test_root_wrapper_available():
-    assert lambda_function.lambda_handler is lambda_handler

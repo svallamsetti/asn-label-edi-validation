@@ -1,4 +1,4 @@
-from lambda_function import (
+from .lambda_function import (
     parse_label,
     _parse_qr_string,
     _parse_text_fields,

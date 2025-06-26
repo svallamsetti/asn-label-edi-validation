@@ -555,11 +555,9 @@ def _lambda_handler_impl(event, context):
     with tempfile.TemporaryDirectory() as tmpdir:
         label_path = os.path.join(tmpdir, os.path.basename(label_key))
         edi_path = os.path.join(tmpdir, os.path.basename(edi_key))
-        from asn_validator import lambda_handler as _lh_mod
-        validate_fn = _lh_mod.validate
         s3.download_file(bucket, label_key, label_path)
         s3.download_file(bucket, edi_key, edi_path)
-        result = validate_fn(label_path, edi_path)
+        result = validate(label_path, edi_path)
         print(json.dumps(result, indent=2))
         return result
 lambda_handler = _lambda_handler_impl

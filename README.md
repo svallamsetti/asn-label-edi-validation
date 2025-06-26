@@ -10,7 +10,7 @@ label and compares it with key fields in the EDI message.
 python -m asn_validator.cli path/to/label.pdf path/to/edi.txt
 ```
 
-All functionality now resides in `lambda_function.py`. Modules in the `asn_validator` package simply re-export these functions.
+All functionality now resides in `asn_validator/lambda_function.py`. Modules in the `asn_validator` package simply re-export these functions.
 The script prints a JSON structure with the parsed label data, parsed
 EDI data and the result of all comparisons. Each QR block produces a
 check entry indicating whether its serial number, quantity and other
@@ -64,8 +64,7 @@ mismatch with a message indicating that packs had conflicting quantities.
 ## AWS Lambda usage
 
 To run validation automatically when files are uploaded to Amazon S3,
-deploy the function `lambda_function.lambda_handler` (which simply
-wraps `asn_validator.lambda_handler.lambda_handler`) as an
+deploy the function `asn_validator.lambda_function.lambda_handler` as an
 AWS Lambda triggered by an S3 "Object Created" event. When invoked for
 a single uploaded object, the handler checks the bucket for a companion
 file with the same base name and an appropriate extension (label or
