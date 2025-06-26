@@ -10,6 +10,7 @@ label and compares it with key fields in the EDI message.
 python -m asn_validator.cli path/to/label.pdf path/to/edi.txt
 ```
 
+All functionality now resides in `lambda_function.py`. Modules in the `asn_validator` package simply re-export these functions.
 The script prints a JSON structure with the parsed label data, parsed
 EDI data and the result of all comparisons. Each QR block produces a
 check entry indicating whether its serial number, quantity and other
