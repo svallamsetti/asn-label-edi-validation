@@ -5,6 +5,7 @@ from unittest.mock import patch, MagicMock
 sys.modules.setdefault('boto3', MagicMock())
 
 from asn_validator.lambda_handler import lambda_handler
+import lambda_function
 
 
 def test_lambda_handler_triggers_validate(tmp_path):
@@ -92,3 +93,7 @@ def test_lambda_handler_missing_companion(tmp_path):
 
     mock_validate.assert_not_called()
     assert result == {'success': False, 'error': 'Missing label or EDI file'}
+
+
+def test_root_wrapper_available():
+    assert lambda_function.lambda_handler is lambda_handler

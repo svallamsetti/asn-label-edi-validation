@@ -63,7 +63,8 @@ mismatch with a message indicating that packs had conflicting quantities.
 ## AWS Lambda usage
 
 To run validation automatically when files are uploaded to Amazon S3,
-deploy the function `asn_validator.lambda_handler.lambda_handler` as an
+deploy the function `lambda_function.lambda_handler` (which simply
+wraps `asn_validator.lambda_handler.lambda_handler`) as an
 AWS Lambda triggered by an S3 "Object Created" event. When invoked for
 a single uploaded object, the handler checks the bucket for a companion
 file with the same base name and an appropriate extension (label or
