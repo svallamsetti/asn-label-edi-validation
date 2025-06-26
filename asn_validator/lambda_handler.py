@@ -40,7 +40,8 @@ def lambda_handler(event, context):
                     label_key = candidate
                     break
                 except Exception as exc:  # type: ignore
-                    if getattr(exc, "response", {}).get("Error", {}).get("Code") != "404":
+                    code = getattr(exc, "response", {}).get("Error", {}).get("Code")
+                    if code not in {"404", "403", "AccessDenied"}:
                         raise
 
         if not edi_key:
@@ -51,7 +52,8 @@ def lambda_handler(event, context):
                     edi_key = candidate
                     break
                 except Exception as exc:  # type: ignore
-                    if getattr(exc, "response", {}).get("Error", {}).get("Code") != "404":
+                    code = getattr(exc, "response", {}).get("Error", {}).get("Code")
+                    if code not in {"404", "403", "AccessDenied"}:
                         raise
 
     if not bucket or not label_key or not edi_key:
