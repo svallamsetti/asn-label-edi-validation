@@ -519,6 +519,8 @@ def lambda_handler(event, context):
         if key and key.lower().endswith((".edi", ".txt")):
             edi_key = urllib.parse.unquote_plus(key)
             break
+    if edi_key:
+        print(f"[DEBUG] EDI file detected: {edi_key}")
 
     try:
         import boto3 as boto3_runtime
@@ -532,11 +534,14 @@ def lambda_handler(event, context):
 
     base = os.path.splitext(os.path.basename(edi_key))[0]
     label_key: Optional[str] = None
+    print(f"[DEBUG] Looking for label files matching {base}")
     for ext in (".pdf", ".png", ".jpg", ".jpeg"):
         candidate = f"labels/{base}{ext}"
+        print(f"[DEBUG] Checking for {candidate}")
         try:
             s3.head_object(Bucket=bucket, Key=candidate)
             label_key = candidate
+            print(f"[DEBUG] Found label file {candidate}")
             break
         except Exception as exc:  # type: ignore
             code = getattr(exc, "response", {}).get("Error", {}).get("Code")
@@ -550,9 +555,15 @@ def lambda_handler(event, context):
     with tempfile.TemporaryDirectory() as tmpdir:
         label_path = os.path.join(tmpdir, os.path.basename(label_key))
         edi_path = os.path.join(tmpdir, os.path.basename(edi_key))
+        print(f"[DEBUG] Downloading label {label_key} and EDI {edi_key}")
         s3.download_file(bucket, label_key, label_path)
         s3.download_file(bucket, edi_key, edi_path)
-        result = validate(label_path, edi_path)
+        try:
+            result = validate(label_path, edi_path)
+        except Exception as exc:
+            print(f"[ERROR] Validation failed: {exc}")
+            raise
+        print("[DEBUG] Validation complete")
         print(json.dumps(result, indent=2))
         return result
 
