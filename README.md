@@ -42,6 +42,11 @@ be installed. These libraries are not included by default. When they are
 missing the parser will log a debug message and return empty results
 instead of raising an exception, so PDF or image labels simply won't be
 parsed.
+If you deploy on AWS Lambda, add the Poppler utilities (e.g. via an
+Lambda layer) and set the environment variable `POPPLER_PATH` to the
+directory containing `pdftoppm`. For example Poppler is often installed
+under `/opt/bin`, so you can set `POPPLER_PATH=/opt/bin` or add that
+directory to `PATH` so `pdf2image` can locate the binaries.
 
 The EDI parser tolerates formatted files that contain line breaks between
 segments, so the input may include or omit newlines after each `~` or `'

@@ -15,10 +15,17 @@ try:
     from pdf2image import convert_from_path
     from PIL import Image
     from pyzbar.pyzbar import decode
+
+    POPPLER_PATH = os.environ.get("POPPLER_PATH")
+    if POPPLER_PATH is None and os.path.exists("/opt/bin"):
+        POPPLER_PATH = "/opt/bin"
+    if POPPLER_PATH and POPPLER_PATH not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = POPPLER_PATH + ":" + os.environ.get("PATH", "")
 except Exception:  # pragma: no cover - libraries may be missing
     convert_from_path = None
     Image = None
     decode = None
+    POPPLER_PATH = None
 
 
 # ---------------------------------------------------------------------------
@@ -130,7 +137,10 @@ def parse_label(path: str) -> Dict[str, Any]:
             )
             pages = []
         else:
-            pages = convert_from_path(path)
+            kwargs = {}
+            if POPPLER_PATH:
+                kwargs["poppler_path"] = POPPLER_PATH
+            pages = convert_from_path(path, **kwargs)
         for idx, page in enumerate(pages, 1):
             qrs, codes = _extract_codes_from_image(page)
             qr_data.extend(qrs)
