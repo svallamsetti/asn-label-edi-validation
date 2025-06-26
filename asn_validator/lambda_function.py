@@ -500,19 +500,15 @@ def _lambda_handler_impl(event, context):
     """AWS Lambda entrypoint triggered by S3 uploads."""
     records = event.get("Records", [])
     bucket = None
-    label_key = None
-    edi_key = None
+    edi_key: Optional[str] = None
 
     for record in records:
         s3_info = record.get("s3", {})
         bucket = s3_info.get("bucket", {}).get("name") or bucket
         key = s3_info.get("object", {}).get("key")
-        if key:
-            key = urllib.parse.unquote_plus(key)
-            if key.lower().endswith((".pdf", ".png", ".jpg", ".jpeg")):
-                label_key = key
-            elif key.lower().endswith((".edi", ".txt")):
-                edi_key = key
+        if key and key.lower().endswith((".edi", ".txt")):
+            edi_key = urllib.parse.unquote_plus(key)
+            break
 
     try:
         import boto3 as boto3_runtime
@@ -520,37 +516,24 @@ def _lambda_handler_impl(event, context):
         raise RuntimeError("boto3 is required for Lambda execution") from exc
     s3 = boto3_runtime.client("s3")
 
-    if bucket and (not label_key or not edi_key):
-        base_key = label_key or edi_key
-        base, _ = os.path.splitext(base_key)
+    if not bucket or not edi_key:
+        return {"success": False, "error": "No EDI file in event"}
 
-        if not label_key:
-            for ext in (".pdf", ".png", ".jpg", ".jpeg"):
-                candidate = base + ext
-                try:
-                    s3.head_object(Bucket=bucket, Key=candidate)
-                    label_key = candidate
-                    break
-                except Exception as exc:  # type: ignore
-                    code = getattr(exc, "response", {}).get("Error", {}).get("Code")
-                    if code not in {"404", "403", "AccessDenied"}:
-                        raise
+    base = os.path.splitext(os.path.basename(edi_key))[0]
+    label_key: Optional[str] = None
+    for ext in (".pdf", ".png", ".jpg", ".jpeg"):
+        candidate = f"labels/{base}{ext}"
+        try:
+            s3.head_object(Bucket=bucket, Key=candidate)
+            label_key = candidate
+            break
+        except Exception as exc:  # type: ignore
+            code = getattr(exc, "response", {}).get("Error", {}).get("Code")
+            if code not in {"404", "403", "AccessDenied"}:
+                raise
 
-        if not edi_key:
-            for ext in (".edi", ".txt"):
-                candidate = base + ext
-                try:
-                    s3.head_object(Bucket=bucket, Key=candidate)
-                    edi_key = candidate
-                    break
-                except Exception as exc:  # type: ignore
-                    code = getattr(exc, "response", {}).get("Error", {}).get("Code")
-                    if code not in {"404", "403", "AccessDenied"}:
-                        raise
-
-    if not bucket or not label_key or not edi_key:
-        print("Waiting for companion file")
-        return {"success": False, "error": "Missing label or EDI file"}
+    if label_key is None:
+        return {"success": False, "error": "Missing label file"}
 
     with tempfile.TemporaryDirectory() as tmpdir:
         label_path = os.path.join(tmpdir, os.path.basename(label_key))

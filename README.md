@@ -65,9 +65,10 @@ mismatch with a message indicating that packs had conflicting quantities.
 
 To run validation automatically when files are uploaded to Amazon S3,
 deploy the function `asn_validator.lambda_function.lambda_handler` as an
-AWS Lambda triggered by an S3 "Object Created" event. When invoked for
-a single uploaded object, the handler checks the bucket for a companion
-file with the same base name and an appropriate extension (label or
-EDI). Validation only runs once both files are present. The handler then
-downloads the files, runs the validator and prints the JSON result to the
-logs which are viewable in CloudWatch.
+AWS Lambda triggered by an S3 "Object Created" event for the `edi/`
+prefix. When an EDI file is uploaded, the handler looks for a label file
+with the same base name inside a sibling `labels/` folder (for example
+`edi/example.edi` uses `labels/example.pdf`). If the label does not yet
+exist, the function returns a message indicating it is waiting for the
+label. Once both files are present, they are downloaded, validated and
+the JSON result is printed to the logs which are viewable in CloudWatch.
