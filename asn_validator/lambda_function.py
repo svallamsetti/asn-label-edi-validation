@@ -124,8 +124,13 @@ def parse_label(path: str) -> Dict[str, Any]:
 
     if path.lower().endswith(".pdf"):
         if convert_from_path is None:
-            raise RuntimeError("pdf2image is required to parse PDF labels")
-        pages = convert_from_path(path)
+            print(
+                "[DEBUG] pdf2image not available; skipping PDF parsing for",
+                path,
+            )
+            pages = []
+        else:
+            pages = convert_from_path(path)
         for idx, page in enumerate(pages, 1):
             qrs, codes = _extract_codes_from_image(page)
             qr_data.extend(qrs)
@@ -140,19 +145,25 @@ def parse_label(path: str) -> Dict[str, Any]:
                 pass
     else:
         if Image is None:
-            raise RuntimeError("Pillow is required to parse image labels")
-        img = Image.open(path)
-        qrs, codes = _extract_codes_from_image(img)
-        qr_data.extend(qrs)
-        barcodes.extend(codes)
-        print(f"[DEBUG] Image: {len(qrs)} QR codes, {len(codes)} barcodes")
-        try:
-            fields = _extract_text_fields_from_image(img)
-            for k, v in fields.items():
-                if v and not text_fields.get(k):
-                    text_fields[k] = v
-        except Exception:
-            pass
+            print(
+                "[DEBUG] Pillow not available; skipping image parsing for",
+                path,
+            )
+            img = None
+        else:
+            img = Image.open(path)
+        if img is not None:
+            qrs, codes = _extract_codes_from_image(img)
+            qr_data.extend(qrs)
+            barcodes.extend(codes)
+            print(f"[DEBUG] Image: {len(qrs)} QR codes, {len(codes)} barcodes")
+            try:
+                fields = _extract_text_fields_from_image(img)
+                for k, v in fields.items():
+                    if v and not text_fields.get(k):
+                        text_fields[k] = v
+            except Exception:
+                pass
 
     parsed_blocks = []
     seen_serials = set()

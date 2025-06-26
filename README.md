@@ -38,7 +38,10 @@ trace file loading and comparison logic when troubleshooting.
 ## Notes
 
 Image, PDF and QR parsing requires `pdf2image`, `Pillow` and `pyzbar` to
-be installed. These libraries are not included by default.
+be installed. These libraries are not included by default. When they are
+missing the parser will log a debug message and return empty results
+instead of raising an exception, so PDF or image labels simply won't be
+parsed.
 
 The EDI parser tolerates formatted files that contain line breaks between
 segments, so the input may include or omit newlines after each `~` or `'
