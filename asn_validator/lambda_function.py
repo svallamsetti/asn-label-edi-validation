@@ -496,7 +496,7 @@ def validate(label_path: str, edi_path: str) -> Dict[str, Any]:
 # AWS Lambda handler
 # ---------------------------------------------------------------------------
 
-def _lambda_handler_impl(event, context):
+def lambda_handler(event, context):
     """AWS Lambda entrypoint triggered by S3 uploads."""
     records = event.get("Records", [])
     bucket = None
@@ -543,7 +543,6 @@ def _lambda_handler_impl(event, context):
         result = validate(label_path, edi_path)
         print(json.dumps(result, indent=2))
         return result
-lambda_handler = _lambda_handler_impl
 
 
 __all__ = [
