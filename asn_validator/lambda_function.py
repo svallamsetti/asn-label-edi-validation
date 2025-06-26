@@ -117,6 +117,7 @@ def _parse_qr_string(data: str) -> Dict[str, Any]:
 
 def parse_label(path: str) -> Dict[str, Any]:
     """Parse an ASN label PDF or image file."""
+    print(f"[DEBUG] Parsing label file: {path}")
     qr_data: list[str] = []
     barcodes: list[str] = []
     text_fields: Dict[str, str] = {}
@@ -125,10 +126,11 @@ def parse_label(path: str) -> Dict[str, Any]:
         if convert_from_path is None:
             raise RuntimeError("pdf2image is required to parse PDF labels")
         pages = convert_from_path(path)
-        for page in pages:
+        for idx, page in enumerate(pages, 1):
             qrs, codes = _extract_codes_from_image(page)
             qr_data.extend(qrs)
             barcodes.extend(codes)
+            print(f"[DEBUG] Page {idx}: {len(qrs)} QR codes, {len(codes)} barcodes")
             try:
                 fields = _extract_text_fields_from_image(page)
                 for k, v in fields.items():
@@ -143,6 +145,7 @@ def parse_label(path: str) -> Dict[str, Any]:
         qrs, codes = _extract_codes_from_image(img)
         qr_data.extend(qrs)
         barcodes.extend(codes)
+        print(f"[DEBUG] Image: {len(qrs)} QR codes, {len(codes)} barcodes")
         try:
             fields = _extract_text_fields_from_image(img)
             for k, v in fields.items():
@@ -159,6 +162,7 @@ def parse_label(path: str) -> Dict[str, Any]:
         if serial and serial not in seen_serials:
             seen_serials.add(serial)
             parsed_blocks.append(block)
+    print(f"[DEBUG] Parsed {len(parsed_blocks)} unique QR blocks")
 
     if text_fields:
         print("Extracted text fields:", text_fields)
@@ -269,6 +273,7 @@ def parse_edifact(contents: str) -> Dict[str, Any]:
 
 
 def parse_edi(path: str) -> Dict[str, Any]:
+    print(f"[DEBUG] Parsing EDI file: {path}")
     with open(path, "r", encoding="utf-8") as f:
         contents = f.read()
     if "~" in contents and "*" in contents:
@@ -281,6 +286,7 @@ def parse_edi(path: str) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) -> Dict[str, Any]:
+    print("[DEBUG] Comparing label data to EDI data")
     result = {
         "success": True,
         "checks": [],
@@ -482,14 +488,17 @@ def compare_label_and_edi(label_data: Dict[str, Any], edi_data: Dict[str, Any]) 
 
 
 def validate(label_path: str, edi_path: str) -> Dict[str, Any]:
+    print(f"[DEBUG] Validating {label_path} against {edi_path}")
     label_data = parse_label(label_path)
     edi_data = parse_edi(edi_path)
     validation = compare_label_and_edi(label_data, edi_data)
-    return {
+    result = {
         "label": label_data,
         "edi": edi_data,
         "validation": validation,
     }
+    print(f"[DEBUG] Validation success: {result['validation']['success']}")
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -498,6 +507,7 @@ def validate(label_path: str, edi_path: str) -> Dict[str, Any]:
 
 def lambda_handler(event, context):
     """AWS Lambda entrypoint triggered by S3 uploads."""
+    print("[DEBUG] Lambda event received")
     records = event.get("Records", [])
     bucket = None
     edi_key: Optional[str] = None
@@ -517,6 +527,7 @@ def lambda_handler(event, context):
     s3 = boto3_runtime.client("s3")
 
     if not bucket or not edi_key:
+        print("[DEBUG] No EDI file found in event")
         return {"success": False, "error": "No EDI file in event"}
 
     base = os.path.splitext(os.path.basename(edi_key))[0]
@@ -533,6 +544,7 @@ def lambda_handler(event, context):
                 raise
 
     if label_key is None:
+        print("[DEBUG] Label file not found")
         return {"success": False, "error": "Missing label file"}
 
     with tempfile.TemporaryDirectory() as tmpdir:

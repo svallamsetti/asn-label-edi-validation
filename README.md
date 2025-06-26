@@ -32,6 +32,9 @@ Fields such as *SHIP FROM*, *SHIP TO*, *PO NO.*, *PO LINE NO.* and
 same information, these values are compared and reported as matches or
 mismatches in the JSON output.
 
+The parser and validator emit `[DEBUG]` messages at key steps so you can
+trace file loading and comparison logic when troubleshooting.
+
 ## Notes
 
 Image, PDF and QR parsing requires `pdf2image`, `Pillow` and `pyzbar` to
